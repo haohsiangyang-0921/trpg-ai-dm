@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRPG 故事生成與 AI 裁判 ｜ 90 秒專案展示簡報</title>
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, sans-serif;
+        background: #0f172a;
+        color: #f8fafc;
+        overflow: hidden;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+    }
+    /* Top Bar with Timer */
+    .top-bar {
+        height: 54px;
+        background: rgba(15, 23, 42, 0.95);
+        border-bottom: 1px solid #334155;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        z-index: 100;
+    }
+    .brand {
+        font-size: 16px;
+        font-weight: 700;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .timer-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #1e293b;
+        padding: 4px 14px;
+        border-radius: 20px;
+        border: 1px solid #475569;
+    }
+    .timer-display {
+        font-family: Consolas, monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: #38bdf8;
+    }
+    .timer-btn {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+    .timer-btn:hover { background: #2563eb; }
+
+    /* Slide Deck Container */
+    .deck {
+        flex: 1;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+    }
+    .slide {
+        position: absolute;
+        width: 90%;
+        max-width: 1100px;
+        height: 82%;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid #334155;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        padding: 45px 55px;
+        display: none;
+        flex-direction: column;
+        justify-content: space-between;
+        opacity: 0;
+        transform: translateY(15px);
+        transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .slide.active {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Content Typography */
+    .tag {
+        display: inline-block;
+        padding: 4px 12px;
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        width: fit-content;
+    }
+    h1 {
+        font-size: 40px;
+        color: #f8fafc;
+        margin-bottom: 12px;
+        letter-spacing: -0.5px;
+    }
+    h2 {
+        font-size: 32px;
+        color: #f1f5f9;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .subtitle {
+        font-size: 20px;
+        color: #94a3b8;
+        line-height: 1.5;
+        margin-bottom: 30px;
+    }
+
+    /* Grid Layouts */
+    .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+    }
+    .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+    .card {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+        transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+        border-color: #38bdf8;
+        transform: translateY(-3px);
+    }
+    .card-icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+    }
+    .card h3 {
+        font-size: 18px;
+        color: #e2e8f0;
+        margin-bottom: 8px;
+    }
+    .card p {
+        font-size: 14px;
+        color: #94a3b8;
+        line-height: 1.5;
+    }
+
+    /* Demo Screen Mockup */
+    .demo-box {
+        background: #020617;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 18px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    .demo-dm {
+        color: #38bdf8;
+        margin-bottom: 10px;
+    }
+    .demo-options {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .demo-btn {
+        flex: 1;
+        background: #1e293b;
+        border: 1px solid #475569;
+        color: #f1f5f9;
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .demo-btn.opt-c {
+        border-color: #f59e0b;
+        color: #fbbf24;
+    }
+
+    /* Navigation Bottom Bar */
+    .nav-bar {
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        background: #0f172a;
+        border-top: 1px solid #1e293b;
+    }
+    .slide-dots {
+        display: flex;
+        gap: 8px;
+    }
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #334155;
+        cursor: pointer;
+    }
+    .dot.active {
+        background: #38bdf8;
+        width: 24px;
+        border-radius: 6px;
+    }
+    .nav-btns {
+        display: flex;
+        gap: 12px;
+    }
+    .nav-btn {
+        background: #1e293b;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .nav-btn:hover { background: #334155; }
+    .timing-hint {
+        font-size: 13px;
+        color: #64748b;
+    }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="brand">🎲 TRPG 故事生成與 AI 裁判 ｜ 90 秒專案展示</div>
+    <div class="timer-container">
+        <span>⏱️ 90秒倒數：</span>
+        <div class="timer-display" id="timer">01:30</div>
+        <button class="timer-btn" id="toggleTimer" onclick="toggleTimer()">開始</button>
+        <button class="timer-btn" onclick="resetTimer()" style="background:#64748b;">重置</button>
+    </div>
+</div>
+
+<!-- Slide Deck -->
+<div class="deck">
+
+    <!-- Slide 1 -->
+    <div class="slide active">
+        <div>
+            <div class="tag">00 ~ 15 秒 ｜ 痛點與開場</div>
+            <h1>🎲 單人 TRPG 故事生成與 AI 裁判</h1>
+            <p class="subtitle">想體驗高自由度 TRPG，卻總苦於「湊不到人、找不到主持人（DM）、規則太難」嗎？</p>
+            
+            <div class="grid-3" style="margin-top: 30px;">
+                <div class="card">
+                    <div class="card-icon">👥</div>
+                    <h3>揪團開團難</h3>
+                    <p>3-5 人約時間極難，動輒流團。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📖</div>
+                    <h3>規則龐雜繁瑣</h3>
+                    <p>厚重規則書，新手光看就望而卻步。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🧙‍♂️</div>
+                    <h3>專業 DM 稀缺</h3>
+                    <p>需要經驗豐富的主持人引導故事。</p>
+                </div>
+            </div>
+        </div>
+        <div style="color: #38bdf8; font-size: 17px; font-weight: 600;">
+            👉 我們的解決方案：讓 AI 擔任專屬地下城主，打造單人隨開即玩的沉浸冒險！
+        </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide">
+        <div>
+            <div class="tag">15 ~ 40 秒 ｜ 核心功能與特色</div>
+            <h2>✨ 三大產品突破</h2>
+            <div class="grid-3">
+                <div class="card" style="border-top: 3px solid #38bdf8;">
+                    <div class="card-icon">🎲</div>
+                    <h3>1. 真正 AI 裁判與檢定</h3>
+                    <p>AI 心中進行 <strong>d20 暗骰判定</strong>！即時計算受到傷害（扣除 HP）、掉落戰利品與地點移動，絕非單純聊天機器人。</p>
+                </div>
+                <div class="card" style="border-top: 3px solid #10b981;">
+                    <div class="card-icon">🎯</div>
+                    <h3>2. 動態三風格行動建議</h3>
+                    <p>每回合生成 3 個風格迥異的按鈕：<br>
+                    <strong>🅰️ 常規穩健 ｜ 🅱️ 策略洞察 ｜ 🅲 搞笑奇策</strong><br>
+                    兼顧隨機趣味與快速操作！</p>
+                </div>
+                <div class="card" style="border-top: 3px solid #f59e0b;">
+                    <div class="card-icon">💻</div>
+                    <h3>3. 本機離線運行 (Local LLM)</h3>
+                    <p>原生適配 <strong>Ollama (Qwen2.5, Llama3.2)</strong>，完全<strong>免費、零 API 成本、數據絕不上傳雲端</strong>，隱私無虞。</p>
+                </div>
+            </div>
+        </div>
+        <div style="font-size: 14px; color: #94a3b8;">
+            * 同時支援自由文字輸入，玩家亦可自訂任何天馬行空的冒險行動。
+        </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide">
+        <div>
+            <div class="tag">40 ~ 65 秒 ｜ 技術架構與容錯</div>
+            <h2>⚙️ 核心技術架構與三層防禦</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>🏗️ 極簡單檔案架構 (Zero-SDK)</h3>
+                    <p style="margin-top: 8px;">
+                        • <strong>前端與狀態機：</strong>Streamlit <code>session_state</code> 維護 HP、道具、地點與歷程。<br>
+                        • <strong>通訊層解耦：</strong>捨棄臃腫 SDK，採用原生 <code>requests</code> 模組呼叫 REST API，徹底消除套件報錯。<br>
+                        • <strong>結構化契約：</strong>約束輸出標準 JSON，實作正規表示式正則抽取。
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>🛡️ 三層容錯防禦體系</h3>
+                    <p style="margin-top: 8px;">
+                        • <strong>即時連線燈號：</strong>側邊欄心跳偵測本地服務（🟢/🔴 狀態燈）。<br>
+                        • <strong>永不卡死按鈕：</strong>斷線時提供保底行動按鈕與重試機制。<br>
+                        • <strong>🎭 離線模擬模式：</strong>無需啟動任何 AI 模型亦能體驗全部遊戲功能。
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div style="font-size: 14px; color: #10b981;">
+            ✔️ 實測通過多種本地模型（Qwen2.5 / Llama3.2）連續 20 回合穩定運行。
+        </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide">
+        <div>
+            <div class="tag">65 ~ 80 秒 ｜ 實機展示 (Live Demo)</div>
+            <h2>🎮 冒險實機操作演示</h2>
+            <div class="demo-box">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px; color:#64748b;">
+                    <span>📍 當前地點：迷霧森林深處祭壇</span>
+                    <span style="color:#ef4444; font-weight:700;">❤️ 生命值：17 / 20 (-3 HP)</span>
+                    <span style="color:#f59e0b;">🎒 獲得物品：哥布林短刀</span>
+                </div>
+                <div class="demo-dm">
+                    🧙‍♂️ <strong>AI 裁判（DM）：</strong><br>
+                    你擲出了 14 點（成功）！你靈巧地閃開了撲面而來的毒藤，但手臂仍被刮破一道血口（HP -3）。藤蔓底下露出一把散發著微光的「哥布林短刀」！前方暗處傳來沉重腳步聲...
+                </div>
+                <div style="font-size:12px; color:#94a3b8; margin-top:10px;">🎯 請選擇下一步行動：</div>
+                <div class="demo-options">
+                    <div class="demo-btn">🅰️ 拔出鐵劍擺出防禦姿態</div>
+                    <div class="demo-btn">🅱️ 點燃火把擲向暗處探照</div>
+                    <div class="demo-btn opt-c">🅲 舉起短刀大唱哥布林戰歌試圖裝熟</div>
+                </div>
+            </div>
+        </div>
+        <div style="font-size: 14px; color: #fbbf24;">
+            👉 點擊「🅲 搞笑選項」，AI DM 立刻接招給予爆笑又符合規則的判定反饋！
+        </div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide">
+        <div>
+            <div class="tag">80 ~ 90 秒 ｜ 下一步與結語</div>
+            <h2>🚀 未來展望與總結</h2>
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-icon">🎲</div>
+                    <h3>3D 物理投骰視覺</h3>
+                    <p>導入 WebGL / Three.js 實現真 3D 骰子碰撞與爆擊特效。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">👥</div>
+                    <h3>Multi-Agent AI 隊友</h3>
+                    <p>招募具備不同性格的 AI 冒險夥伴同台吐槽互動。</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon">🎙️</div>
+                    <h3>即時語音朗讀與音效</h3>
+                    <p>本地語音模型（TTS）朗讀 DM 旁白與地牢動態氛圍音。</p>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #334155; padding-top:15px;">
+            <span style="font-size: 16px; color:#e2e8f0;">感謝聆聽！歡迎體驗開源專案</span>
+            <span style="font-size: 14px; color:#38bdf8;">GitHub: github.com/haohsiangyang-0921/trpg-ai-dm</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- Navigation Bottom Bar -->
+<div class="nav-bar">
+    <div class="timing-hint" id="timingHint">00~15s：痛點開場</div>
+    <div class="slide-dots">
+        <div class="dot active" onclick="goToSlide(0)"></div>
+        <div class="dot" onclick="goToSlide(1)"></div>
+        <div class="dot" onclick="goToSlide(2)"></div>
+        <div class="dot" onclick="goToSlide(3)"></div>
+        <div class="dot" onclick="goToSlide(4)"></div>
+    </div>
+    <div class="nav-btns">
+        <button class="nav-btn" onclick="prevSlide()">◀ 上一頁</button>
+        <button class="nav-btn" onclick="nextSlide()" style="background:#38bdf8; color:#0f172a; font-weight:700;">下一頁 ▶</button>
+    </div>
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot');
+    const hints = [
+        "00~15s：痛點開場（湊團難、規則繁、缺 DM）",
+        "15~40s：核心突破（d20 暗骰判定、三風格按鈕、本地免費用）",
+        "40~65s：技術實作（無 SDK 依賴、狀態機、三層容錯）",
+        "65~80s：實機展示（點擊選項、掉寶判定、搞怪奇策反饋）",
+        "80~90s：未來展望（3D 投骰、AI 隊友、語音氛圍）"
+    ];
+
+    function showSlide(index) {
+        if (index < 0 || index >= slides.length) return;
+        slides[currentSlide].classList.remove('active');
+        dots[currentSlide].classList.remove('active');
+        
+        currentSlide = index;
+        slides[currentSlide].classList.add('active');
+        dots[currentSlide].classList.add('active');
+        document.getElementById('timingHint').innerText = hints[currentSlide];
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) showSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) showSlide(currentSlide - 1);
+    }
+
+    function goToSlide(index) {
+        showSlide(index);
+    }
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+            nextSlide();
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+            prevSlide();
+        }
+    });
+
+    // 90s Timer Logic
+    let timeLeft = 90;
+    let timerId = null;
+
+    function updateTimerDisplay() {
+        const min = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const sec = (timeLeft % 60).toString().padStart(2, '0');
+        const display = document.getElementById('timer');
+        display.innerText = `${min}:${sec}`;
+        if (timeLeft <= 15) {
+            display.style.color = '#ef4444';
+        } else if (timeLeft <= 40) {
+            display.style.color = '#f59e0b';
+        } else {
+            display.style.color = '#38bdf8';
+        }
+    }
+
+    function toggleTimer() {
+        const btn = document.getElementById('toggleTimer');
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+            btn.innerText = '繼續';
+            btn.style.background = '#3b82f6';
+        } else {
+            btn.innerText = '暫停';
+            btn.style.background = '#e11d48';
+            timerId = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(timerId);
+                    timerId = null;
+                    btn.innerText = '時間到！';
+                }
+            }, 1000);
+        }
+    }
+
+    function resetTimer() {
+        if (timerId) clearInterval(timerId);
+        timerId = null;
+        timeLeft = 90;
+        updateTimerDisplay();
+        const btn = document.getElementById('toggleTimer');
+        btn.innerText = '開始';
+        btn.style.background = '#3b82f6';
+    }
+</script>
+
+</body>
+</html>

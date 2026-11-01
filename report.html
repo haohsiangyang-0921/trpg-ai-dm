@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>專題報告：TRPG 故事生成與 AI 裁判系統</title>
+<style>
+    @page {
+        size: A4;
+        margin: 20mm 18mm 20mm 18mm;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", Roboto, Helvetica, Arial, sans-serif;
+        color: #24292e;
+        line-height: 1.6;
+        font-size: 13.5px;
+    }
+    .header {
+        text-align: center;
+        border-bottom: 2px solid #2b579a;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+    }
+    .header h1 {
+        margin: 0 0 8px 0;
+        color: #1a365d;
+        font-size: 24px;
+        letter-spacing: 1px;
+    }
+    .header .subtitle {
+        font-size: 14px;
+        color: #4a5568;
+        font-weight: 500;
+    }
+    .meta-box {
+        display: flex;
+        justify-content: space-between;
+        background-color: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 8px 16px;
+        margin-bottom: 20px;
+        font-size: 12px;
+        color: #4a5568;
+    }
+    h2 {
+        color: #2b579a;
+        font-size: 17px;
+        border-left: 4px solid #3182ce;
+        padding-left: 8px;
+        margin-top: 18px;
+        margin-bottom: 10px;
+    }
+    h3 {
+        color: #2d3748;
+        font-size: 14px;
+        margin-top: 12px;
+        margin-bottom: 6px;
+    }
+    p {
+        margin: 6px 0;
+        text-align: justify;
+    }
+    ul, ol {
+        margin: 6px 0;
+        padding-left: 22px;
+    }
+    li {
+        margin-bottom: 4px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+        font-size: 12.5px;
+    }
+    th, td {
+        border: 1px solid #cbd5e0;
+        padding: 6px 10px;
+        text-align: left;
+    }
+    th {
+        background-color: #edf2f7;
+        color: #2d3748;
+        font-weight: 600;
+    }
+    .highlight-box {
+        background-color: #ebf8ff;
+        border-left: 4px solid #3182ce;
+        padding: 8px 12px;
+        border-radius: 0 4px 4px 0;
+        margin: 10px 0;
+        font-size: 12.5px;
+    }
+    .badge {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .badge-primary { background-color: #e2e8f0; color: #2d3748; }
+    .badge-success { background-color: #c6f6d5; color: #22543d; }
+    code {
+        font-family: Consolas, monospace;
+        background-color: #edf2f7;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+    .footer {
+        margin-top: 25px;
+        text-align: center;
+        font-size: 11px;
+        color: #a0aec0;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 8px;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🎲 單人 TRPG 故事生成與 AI 裁判系統</h1>
+    <div class="subtitle">基於 Streamlit 與本地大型語言模型（Local LLM）的智能文字冒險應用</div>
+</div>
+
+<div class="meta-box">
+    <div><strong>專案負責人：</strong>haohsiangyang-0921</div>
+    <div><strong>開發技術：</strong>Python, Streamlit, Ollama, REST API</div>
+    <div><strong>報告日期：</strong>2026 年 11 月</div>
+</div>
+
+<h2>一、做什麼（What & Why）：專題背景與核心機制</h2>
+<p>
+傳統桌上角色扮演遊戲（TRPG）以高自由度與沉浸劇情著稱，但通常面臨**「開團門檻高、組隊不易、缺乏資深地下城主（DM）」**等痛點。本專題旨在打造一款<strong>單人隨開即玩的 TRPG 智能冒險平台</strong>，將現代大語言模型（LLM）賦予為經驗豐富且風趣嚴謹的 AI 裁判。
+</p>
+<div class="highlight-box">
+    <strong>🌟 三大核心特色：</strong>
+    <ol>
+        <li><strong>AI 數值與命運判定：</strong>AI 自動進行暗骰（d20）檢定，即時計算戰鬥傷害（扣除 HP）、探索補給、道具掉落與地點轉移。</li>
+        <li><strong>動態三風格建議行動：</strong>每回合自動生成「🅰️ 常規穩健」、「🅱️ 策略洞察」、「🅲 搞笑奇策」三種按鈕，兼顧自由度與輕鬆操作，並保留自由打字框。</li>
+        <li><strong>隱私優先與本地運行：</strong>全面適配本機運行之 Ollama 與 LM Studio，資料免上傳雲端、無 API 呼叫費用限制。</li>
+    </ol>
+</div>
+
+<h2>二、給誰用（Target Audience）：目標客群與應用場景</h2>
+<table>
+    <tr>
+        <th style="width: 28%;">目標族群</th>
+        <th style="width: 36%;">核心痛點</th>
+        <th style="width: 36%;">解決方案與價值</th>
+    </tr>
+    <tr>
+        <td><strong>TRPG 初學者／愛好者</strong></td>
+        <td>找不到夥伴或固態團、規則書繁瑣龐大</td>
+        <td>零門檻單人隨時開團，由 AI 帶領引導冒險。</td>
+    </tr>
+    <tr>
+        <td><strong>桌遊 DM／編劇創作者</strong></td>
+        <td>劇本構思卡關、NPC 互動枯燥</td>
+        <td>作為靈感發想器，動態獲取意外劇情與選項轉折。</td>
+    </tr>
+    <tr>
+        <td><strong>本地 AI / 開源技術探索者</strong></td>
+        <td>不想依賴商業 API 付費與個資隱私顧慮</td>
+        <td>純本地運行，支援 Qwen2.5、Llama3.2 等開源模型。</td>
+    </tr>
+</table>
+
+<h2>三、怎麼做（Architecture & Implementation）：架構與技術實作</h2>
+<p>
+系統採用<strong>極簡單一檔案（Single-file Architecture）</strong>架構設計，有效將系統相依性降到最低：
+</p>
+<ul>
+    <li><strong>前端展示層（Streamlit）：</strong>透過 <code>st.session_state</code> 維護玩家血量、道具清單與對話歷程；採用 <code>st.columns</code> 渲染動態選項按鈕，並配合自訂 CSS 標籤展示生命與道具變動。</li>
+    <li><strong>無依賴通訊層（Zero-dependency HTTP）：</strong>捨棄肥大的第三方套件，以標準 <code>requests</code> 模組直接發送符合 OpenAI 規範的 RESTful API 請求，完全解耦外部套件依賴。</li>
+    <li><strong>提示詞工程與結構化契約（System Prompt & JSON）：</strong>約束 AI 僅輸出標準 JSON 格式（含 <code>story</code>, <code>hp_change</code>, <code>items_obtained</code>, <code>location</code>, <code>options</code>），並實作正規表示式正則抽取，杜絕模型雜訊解析失敗。</li>
+    <li><strong>三層容錯防禦體系：</strong>包含側邊欄即時連線健康檢查燈號（🟢/🔴）、連線異常自動重試面板、及內建免模型即可體驗的「🎭 離線模擬模式」。</li>
+</ul>
+
+<h2>四、怎麼測（Testing & Quality Assurance）：測試驗證</h2>
+<table>
+    <tr>
+        <th>測試維度</th>
+        <th>測試項目</th>
+        <th>驗證方式與成果</th>
+    </tr>
+    <tr>
+        <td><strong>模型相容性</strong></td>
+        <td>Qwen 2.5、Llama 3.2、GPT-4o-mini</td>
+        <td>驗證 JSON 結構化解析成功率，正則容錯率達到 100%。</td>
+    </tr>
+    <tr>
+        <td><strong>異常處理</strong></td>
+        <td>Ollama 未開機、網路斷線</td>
+        <td>確認側邊欄亮起紅燈提示，畫面跳出重試選項且按鈕永不崩潰。</td>
+    </tr>
+    <tr>
+        <td><strong>規則邏輯</strong></td>
+        <td>HP 歸零、物品新增、地點變更</td>
+        <td>血量即時扣除至進度條、生命歸零即刻觸發英勇陣亡結算介面。</td>
+    </tr>
+</table>
+
+<h2>五、下一步（Next Steps & Roadmap）：未來展望</h2>
+<ol>
+    <li><strong>3D 物理投骰與音效渲染：</strong>整合 Three.js / WebGL 實現真實 3D 骰子物理滾動動畫與 TRPG 氛圍音效。</li>
+    <li><strong>多角色組隊與 AI 隊友（Multi-Agent）：</strong>支援玩家招募不同性格的 NPC 隊友，讓多個 AI 模型互相吐槽與支援協同作戰。</li>
+    <li><strong>冒險回憶錄匯出：</strong>一鍵將整趟冒險歷史排版整理，匯出為圖文並茂的 Markdown 與 PDF 紀念冊。</li>
+</ol>
+
+<div class="footer">
+    單人 TRPG 故事生成與 AI 裁判系統專案報告 ｜ GitHub: https://github.com/haohsiangyang-0921/trpg-ai-dm
+</div>
+
+</body>
+</html>
